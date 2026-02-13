@@ -1,0 +1,33 @@
+# Backend API Dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy csproj files and restore dependencies
+COPY ["src/DeepOverflow.API/DeepOverflow.API.csproj", "DeepOverflow.API/"]
+COPY ["src/DeepOverflow.Application/DeepOverflow.Application.csproj", "DeepOverflow.Application/"]
+COPY ["src/DeepOverflow.Domain/DeepOverflow.Domain.csproj", "DeepOverflow.Domain/"]
+COPY ["src/DeepOverflow.Infrastructure/DeepOverflow.Infrastructure.csproj", "DeepOverflow.Infrastructure/"]
+
+RUN dotnet restore "DeepOverflow.API/DeepOverflow.API.csproj"
+
+# Copy everything else and build
+COPY src/ .
+WORKDIR "/src/DeepOverflow.API"
+RUN dotnet build "DeepOverflow.API.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "DeepOverflow.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+# Create uploads directory
+RUN mkdir -p /app/uploads && chmod 755 /app/uploads
+
+ENTRYPOINT ["dotnet", "DeepOverflow.API.dll"]

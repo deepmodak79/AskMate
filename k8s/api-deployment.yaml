@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deepoverflow-api
+  namespace: deepoverflow
+  labels:
+    app: deepoverflow-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: deepoverflow-api
+  template:
+    metadata:
+      labels:
+        app: deepoverflow-api
+    spec:
+      containers:
+      - name: api
+        image: ghcr.io/rmes/deepoverflow-api:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: ASPNETCORE_URLS
+          value: "http://+:80"
+        - name: ConnectionStrings__DefaultConnection
+          valueFrom:
+            secretKeyRef:
+              name: deepoverflow-secrets
+              key: db-connection-string
+        - name: ConnectionStrings__Redis
+          valueFrom:
+            secretKeyRef:
+              name: deepoverflow-secrets
+              key: redis-connection-string
+        - name: ElasticSearch__Uri
+          value: "http://elasticsearch:9200"
+        - name: JWT__Secret
+          valueFrom:
+            secretKeyRef:
+              name: deepoverflow-secrets
+              key: jwt-secret
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: deepoverflow-api-service
+  namespace: deepoverflow
+spec:
+  selector:
+    app: deepoverflow-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: deepoverflow-api-hpa
+  namespace: deepoverflow
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: deepoverflow-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

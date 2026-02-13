@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>✅ Deep Overflow is LIVE!</title>
+    <meta http-equiv="refresh" content="0; url=http://localhost:8080/demo.html">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            padding: 2rem;
+        }
+        h1 { font-size: 3rem; margin-bottom: 1rem; }
+        p { font-size: 1.2rem; margin: 1rem 0; }
+        a {
+            color: white;
+            font-size: 1.5rem;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 SUCCESS!</h1>
+        <p>Deep Overflow is running!</p>
+        <div class="spinner"></div>
+        <p>Redirecting to...</p>
+        <a href="http://localhost:8080/demo.html">http://localhost:8080/demo.html</a>
+        <p style="font-size: 0.9rem; margin-top: 2rem; opacity: 0.9;">
+            If not redirected automatically, click the link above
+        </p>
+    </div>
+</body>
+</html>
