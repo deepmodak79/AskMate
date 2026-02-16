@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { environment } from '@environments/environment';
 import { AuthService, LoginResponse } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, MatSnackBarModule],
   template: `
     <div class="container">
       <h1>Register</h1>
@@ -97,7 +98,8 @@ export class RegisterComponent {
     private fb: FormBuilder,
     private http: HttpClient,
     private auth: AuthService,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {}
 
   submit() {
@@ -116,8 +118,13 @@ export class RegisterComponent {
       next: (resp) => {
         this.auth.applyLoginResponse(resp);
         this.isSubmitting = false;
+        const name = resp.user?.displayName || resp.user?.username || 'User';
+        this.snackBar.open(`Registration successful! Welcome, ${name}.`, 'OK', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
         this.router.navigate(['/questions']);
-        window.location.reload();
       },
       error: (err) => {
         this.isSubmitting = false;

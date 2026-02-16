@@ -2,12 +2,13 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, MatSnackBarModule],
   template: `
     <div class="container">
       <h1>Log In</h1>
@@ -62,7 +63,8 @@ export class LoginComponent {
   constructor(
     private fb: FormBuilder,
     private auth: AuthService,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {}
 
   submit() {
@@ -74,11 +76,15 @@ export class LoginComponent {
       email: this.form.value.email!,
       password: this.form.value.password!
     }).subscribe({
-      next: () => {
+      next: (response) => {
         this.isSubmitting = false;
+        const name = response.user?.displayName || response.user?.username || 'User';
+        this.snackBar.open(`User login successful! Welcome, ${name}.`, 'OK', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top'
+        });
         this.router.navigate(['/questions']);
-        // quick refresh for header state
-        window.location.reload();
       },
       error: (err) => {
         this.isSubmitting = false;
