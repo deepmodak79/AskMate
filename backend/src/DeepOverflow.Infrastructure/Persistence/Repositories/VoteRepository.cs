@@ -21,6 +21,12 @@ public sealed class VoteRepository : EfRepository<Vote>, IVoteRepository
             .FirstOrDefaultAsync(v => v.UserId == userId && v.TargetType == parsed && v.TargetId == targetId, cancellationToken);
     }
 
+    public async Task<Vote?> FindUserVoteAsync(Guid userId, VoteTargetType targetType, Guid targetId, CancellationToken cancellationToken = default)
+    {
+        return await DbContext.Votes
+            .FirstOrDefaultAsync(v => v.UserId == userId && v.TargetType == targetType && v.TargetId == targetId, cancellationToken);
+    }
+
     public async Task<int> GetVoteScoreAsync(string targetType, Guid targetId, CancellationToken cancellationToken = default)
     {
         if (!Enum.TryParse<VoteTargetType>(targetType, ignoreCase: true, out var parsed))

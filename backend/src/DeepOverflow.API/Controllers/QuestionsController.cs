@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using MediatR;
 using DeepOverflow.Application.Questions.Commands.CreateQuestion;
+using DeepOverflow.Application.Questions.Commands.VoteQuestion;
 using DeepOverflow.Application.Questions.Queries.GetQuestion;
 using DeepOverflow.Application.Common;
 using DeepOverflow.Infrastructure.Persistence;
@@ -215,8 +216,14 @@ public class QuestionsController : ControllerBase
     [ProducesResponseType(401)]
     public async Task<IActionResult> VoteQuestion(Guid id, [FromBody] VoteRequest request)
     {
-        // Implementation would follow similar pattern
-        return Ok(new { voteScore = 0 });
+        var result = await _mediator.Send(new VoteQuestionCommand
+        {
+            QuestionId = id,
+            VoteType = request.VoteType ?? "upvote"
+        });
+        if (!result.IsSuccess)
+            return BadRequest(result.ErrorMessage);
+        return Ok(new { voteScore = result.Data!.VoteScore });
     }
 
     /// <summary>

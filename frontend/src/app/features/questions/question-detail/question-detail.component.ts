@@ -21,9 +21,15 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
 
         <h1>{{ question.title }}</h1>
         <div class="meta">
-          <span>Asked by <b>{{ question.author.displayName }}</b></span>
+          <span>Asked by <b>{{ question.author?.displayName || question.authorDisplayName || question.author?.username || question.authorUsername || 'Unknown' }}</b></span>
           <span class="dot">•</span>
           <span>{{ question.createdAt | date:'short' }}</span>
+        </div>
+
+        <div class="vote-row">
+          <button type="button" class="vote-btn" (click)="voteQuestion('upvote')" title="Upvote">▲</button>
+          <span class="vote-score">{{ question.voteScore }}</span>
+          <button type="button" class="vote-btn" (click)="voteQuestion('downvote')" title="Downvote">▼</button>
         </div>
 
         <div class="body">
@@ -41,6 +47,11 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
         <div class="answers">
           @for (a of question.answers; track a.id) {
             <div class="answer" [class.accepted]="a.isAccepted">
+              <div class="vote-row answer-votes">
+                <button type="button" class="vote-btn" (click)="voteAnswer(a.id, 'upvote')" title="Upvote">▲</button>
+                <span class="vote-score">{{ a.voteScore }}</span>
+                <button type="button" class="vote-btn" (click)="voteAnswer(a.id, 'downvote')" title="Downvote">▼</button>
+              </div>
               <div class="answer-body"><pre>{{ a.body }}</pre></div>
               <div class="answer-meta">
                 <span>{{ a.createdAt | date:'short' }}</span>
@@ -56,7 +67,7 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
         <form [formGroup]="answerForm" (ngSubmit)="postAnswer()">
           <textarea formControlName="body" rows="6" placeholder="Write your answer..."></textarea>
           <div class="actions">
-            <button class="btn btn-primary" type="submit" [disabled]="answerForm.invalid || posting">
+            <button class="btn btn-primary btn-submit" type="submit" [disabled]="answerForm.invalid || posting">
               {{ posting ? 'Posting...' : 'Post Answer' }}
             </button>
           </div>
@@ -84,7 +95,7 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
     .tags { display:flex; gap:.5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
     .tag { padding: .25rem .6rem; background: var(--tag-bg); border-radius: 6px; }
     .answers { display: grid; gap: 1rem; margin-bottom: 2rem; }
-    .answer { border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
+    .answer { border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; display: flex; gap: 1rem; }
     .answer.accepted { border-color: #2e7d32; }
     .answer-meta { display:flex; gap: .75rem; align-items:center; margin-top: .75rem; color: var(--secondary-text); }
     .accepted-badge { color: #2e7d32; font-weight: 600; }
@@ -96,8 +107,15 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
       font: inherit;
     }
     .actions { margin-top: .75rem; }
-    .btn { padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer; }
+    .btn { padding: 0.6rem 1rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer; font-size: 1rem; }
     .btn-primary { background: var(--primary-color); color: #fff; }
+    .btn-submit { min-width: 140px; color: #fff !important; background: var(--primary-color) !important; font-weight: 600; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .vote-row { display: flex; align-items: center; gap: 0.25rem; margin: 0.5rem 0; }
+    .vote-btn { background: transparent; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.9rem; color: var(--text-color); }
+    .vote-btn:hover { background: var(--hover-bg); }
+    .vote-score { min-width: 1.5rem; text-align: center; font-weight: 600; }
+    .answer-votes { margin-bottom: 0.5rem; }
     .error { color: #b00020; }
     .hint { color: var(--secondary-text); margin: .5rem 0 0; }
   `]
@@ -161,13 +179,31 @@ export class QuestionDetailComponent implements OnInit {
       next: () => {
         this.posting = false;
         this.answerForm.reset();
-        // reload question to show new answer
         this.fetch(this.question!.slug);
       },
       error: (err) => {
         this.posting = false;
-        this.postError = err?.error?.error || 'Failed to post answer (are you logged in?)';
+        this.postError = err?.message || 'Failed to post answer (are you logged in?)';
       }
+    });
+  }
+
+  voteQuestion(type: 'upvote' | 'downvote') {
+    if (!this.question) return;
+    this.questionService.voteQuestion(this.question.id, type).subscribe({
+      next: () => this.fetch(this.question!.slug),
+      error: () => { /* auth or network error - interceptor may show toast */ }
+    });
+  }
+
+  voteAnswer(answerId: string, type: 'upvote' | 'downvote') {
+    if (!this.question) return;
+    this.http.post<{ voteScore: number }>(`${environment.apiUrl}/answers/${answerId}/vote`, { voteType: type }).subscribe({
+      next: (res) => {
+        const a = this.question!.answers?.find(x => x.id === answerId);
+        if (a) a.voteScore = res.voteScore;
+      },
+      error: () => { /* auth or network error */ }
     });
   }
 }

@@ -1,5 +1,7 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using DeepOverflow.Application.Answers.Commands.VoteAnswer;
 using DeepOverflow.Application.Common.Interfaces;
 using DeepOverflow.Domain.Entities;
 using DeepOverflow.Infrastructure.Persistence;
@@ -12,15 +14,18 @@ namespace DeepOverflow.API.Controllers;
 public class AnswersController : ControllerBase
 {
     private readonly ApplicationDbContext _dbContext;
+    private readonly IMediator _mediator;
     private readonly ICurrentUserService _currentUser;
     private readonly ILogger<AnswersController> _logger;
 
     public AnswersController(
         ApplicationDbContext dbContext,
+        IMediator mediator,
         ICurrentUserService currentUser,
         ILogger<AnswersController> logger)
     {
         _dbContext = dbContext;
+        _mediator = mediator;
         _currentUser = currentUser;
         _logger = logger;
     }
@@ -178,7 +183,14 @@ public class AnswersController : ControllerBase
     [ProducesResponseType(401)]
     public async Task<IActionResult> VoteAnswer(Guid id, [FromBody] VoteRequest request)
     {
-        return Ok(new { voteScore = 0 });
+        var result = await _mediator.Send(new VoteAnswerCommand
+        {
+            AnswerId = id,
+            VoteType = request.VoteType ?? "upvote"
+        });
+        if (!result.IsSuccess)
+            return BadRequest(result.ErrorMessage);
+        return Ok(new { voteScore = result.Data!.VoteScore });
     }
 }
 

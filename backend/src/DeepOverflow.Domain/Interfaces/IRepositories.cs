@@ -48,5 +48,6 @@ public interface ITagRepository : IRepository<Tag>
 public interface IVoteRepository : IRepository<Vote>
 {
     Task<Vote?> GetUserVoteAsync(Guid userId, string targetType, Guid targetId, CancellationToken cancellationToken = default);
+    Task<Vote?> FindUserVoteAsync(Guid userId, VoteTargetType targetType, Guid targetId, CancellationToken cancellationToken = default);
     Task<int> GetVoteScoreAsync(string targetType, Guid targetId, CancellationToken cancellationToken = default);
 }
