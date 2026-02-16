@@ -17,8 +17,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         // Network/CORS failure (no response)
         errorMessage = 'Cannot reach server. Is the API running at ' + (error.url || 'localhost:5000') + '? Check CORS and try again.';
       } else {
-        // Backend returns { error: "..." } - prefer that over generic messages
-        const backendError = error.error?.error || error.error?.errorMessage;
+        // Backend returns { error: "..." } or { errors: ["..."] } for validation
+        const backendError = error.error?.error || error.error?.errorMessage
+          || (Array.isArray(error.error?.errors) ? error.error.errors.join('. ') : null);
         switch (error.status) {
           case 401:
             errorMessage = backendError || 'Unauthorized. Please log in.';
@@ -33,6 +34,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             break;
           case 404:
             errorMessage = backendError || 'Resource not found.';
+            break;
+          case 400:
+            errorMessage = backendError || 'Invalid request. Please check your input.';
             break;
           case 429:
             errorMessage = backendError || 'Too many requests. Please try again later.';

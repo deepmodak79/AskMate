@@ -29,6 +29,22 @@ import { QuestionService } from '@core/services/question.service';
           </span>
         </label>
 
+        <div class="solution-toggle">
+          <label class="checkbox-label">
+            <input type="checkbox" [checked]="hasSolution" (change)="toggleSolution($event)" />
+            <span>I have a solution to share</span>
+          </label>
+          <p class="hint-inline">Post your question along with your solution to help others facing the same problem.</p>
+        </div>
+
+        <label *ngIf="hasSolution">
+          <span>Your Solution</span>
+          <textarea formControlName="solution" rows="8" placeholder="Describe how you solved the problem..."></textarea>
+          <span class="field-error" *ngIf="form.get('solution')?.invalid && form.get('solution')?.touched">
+            Solution must be at least 20 characters
+          </span>
+        </label>
+
         <label>
           <span>Tags (comma separated)</span>
           <input formControlName="tags" placeholder="eg. windows, scada, networking" />
@@ -39,7 +55,7 @@ import { QuestionService } from '@core/services/question.service';
 
         <div class="actions">
           <button class="btn btn-primary" type="submit" [disabled]="form.invalid || isSubmitting">
-            {{ isSubmitting ? 'Posting...' : 'Post Question' }}
+            {{ isSubmitting ? 'Posting...' : (hasSolution ? 'Post Question & Solution' : 'Post Question') }}
           </button>
           <button class="btn btn-secondary" type="button" (click)="cancel()">Cancel</button>
         </div>
@@ -74,16 +90,22 @@ import { QuestionService } from '@core/services/question.service';
     .btn-secondary { background: transparent; border-color: var(--border-color); }
     .field-error { color: #b00020; font-size: 0.85rem; }
     .hint { color: var(--secondary-text); margin: 0; }
+    .hint-inline { color: var(--secondary-text); margin: 0.25rem 0 0; font-size: 0.9rem; }
+    .solution-toggle { margin: 0.5rem 0; }
+    .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+    .checkbox-label input { width: auto; }
     .error { color: #b00020; margin: 0; }
   `]
 })
 export class QuestionFormComponent {
   isSubmitting = false;
   error: string | null = null;
+  hasSolution = false;
 
   form = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(300)]],
     body: ['', [Validators.required, Validators.minLength(20)]],
+    solution: [''],
     tags: ['', [Validators.required]]
   });
 
@@ -93,6 +115,18 @@ export class QuestionFormComponent {
     private router: Router
   ) {}
 
+  toggleSolution(ev: Event) {
+    this.hasSolution = (ev.target as HTMLInputElement).checked;
+    const solutionControl = this.form.get('solution');
+    if (this.hasSolution) {
+      solutionControl?.setValidators([Validators.required, Validators.minLength(20)]);
+    } else {
+      solutionControl?.clearValidators();
+      solutionControl?.setValue('');
+    }
+    solutionControl?.updateValueAndValidity();
+  }
+
   submit() {
     this.error = null;
     this.form.markAllAsTouched();
@@ -100,14 +134,19 @@ export class QuestionFormComponent {
 
     const title = this.form.value.title!.trim();
     const body = this.form.value.body!.trim();
-    const tags = (this.form.value.tags || '')
-      .split(',')
-      .map(t => t.trim().toLowerCase())
-      .filter(Boolean)
-      .slice(0, 5);
+    const solution = this.hasSolution ? this.form.value.solution?.trim() : undefined;
+    const tags = [...new Set(
+      (this.form.value.tags || '')
+        .split(',')
+        .map(t => t.trim().toLowerCase().replace(/[^a-z0-9\-_]/g, ''))
+        .filter(Boolean)
+    )].slice(0, 5);
+
+    const payload: { title: string; body: string; tags: string[]; solution?: string } = { title, body, tags };
+    if (solution && solution.length >= 20) payload.solution = solution;
 
     this.isSubmitting = true;
-    this.questionService.createQuestion({ title, body, tags }).subscribe({
+    this.questionService.createQuestion(payload).subscribe({
       next: () => {
         this.isSubmitting = false;
         this.router.navigate(['/questions']);

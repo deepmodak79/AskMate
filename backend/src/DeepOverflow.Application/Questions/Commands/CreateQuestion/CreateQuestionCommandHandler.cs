@@ -72,8 +72,13 @@ public class CreateQuestionCommandHandler : IRequestHandler<CreateQuestionComman
                 AuthorId = _currentUserService.UserId.Value
             };
 
-            // Process tags
-            var tagEntities = await ProcessTagsAsync(request.Tags, _currentUserService.UserId.Value, cancellationToken);
+            // Process tags (deduplicate to avoid duplicate QuestionTag key violation)
+            var uniqueTagNames = request.Tags?.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim().ToLowerInvariant()).Distinct().ToList() ?? new List<string>();
+            if (uniqueTagNames.Count == 0)
+            {
+                return Result<CreateQuestionResponse>.Failure("At least one tag is required");
+            }
+            var tagEntities = await ProcessTagsAsync(uniqueTagNames, _currentUserService.UserId.Value, cancellationToken);
             
             foreach (var tag in tagEntities)
             {
@@ -85,8 +90,28 @@ public class CreateQuestionCommandHandler : IRequestHandler<CreateQuestionComman
                 tag.IncrementUsage();
             }
 
-            // Add question
+            // Add question and save first (avoids circular dependency with Answer->Question->AcceptedAnswerId)
             await _unitOfWork.Questions.AddAsync(question, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // If user has a solution, create answer and link it (after Question is persisted)
+            if (!string.IsNullOrWhiteSpace(request.Solution))
+            {
+                var solutionBody = request.Solution.Trim();
+                var answer = new Domain.Entities.Answer
+                {
+                    QuestionId = question.Id,
+                    Body = solutionBody,
+                    AuthorId = _currentUserService.UserId.Value,
+                    IsAccepted = true,
+                    AcceptedAt = DateTime.UtcNow
+                };
+                await _unitOfWork.Answers.AddAsync(answer, cancellationToken);
+                question.AcceptAnswer(answer.Id);
+                question.AnswerCount = 1;
+                question.LastActivityAt = DateTime.UtcNow;
+                question.UpdatedAt = DateTime.UtcNow;
+            }
             
             // Give reputation points for asking question
             var author = await _unitOfWork.Users.GetByIdAsync(_currentUserService.UserId.Value, cancellationToken);
@@ -162,7 +187,11 @@ public class CreateQuestionCommandHandler : IRequestHandler<CreateQuestionComman
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating question");
+            _logger.LogError(ex, "Error creating question: {Message}", ex.Message);
+            // Include inner exception hint for common DB issues
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            if (msg.Contains("UNIQUE constraint") || msg.Contains("duplicate key"))
+                return Result<CreateQuestionResponse>.Failure("A question with this title may already exist. Try a different title.");
             return Result<CreateQuestionResponse>.Failure("An error occurred while creating the question");
         }
     }

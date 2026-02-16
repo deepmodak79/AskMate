@@ -26,6 +26,10 @@ public class CreateQuestionCommandValidator : AbstractValidator<CreateQuestionCo
         RuleForEach(x => x.Tags)
             .NotEmpty().WithMessage("Tag cannot be empty")
             .MaximumLength(50).WithMessage("Tag cannot exceed 50 characters")
-            .Matches("^[a-z0-9\\-]+$").WithMessage("Tags must contain only lowercase letters, numbers, and hyphens");
+            .Matches("^[a-z0-9\\-_]+$").WithMessage("Tags must contain only lowercase letters, numbers, hyphens, and underscores");
+
+        RuleFor(x => x.Solution)
+            .MinimumLength(20).WithMessage("Solution must be at least 20 characters")
+            .When(x => !string.IsNullOrWhiteSpace(x.Solution));
     }
 }

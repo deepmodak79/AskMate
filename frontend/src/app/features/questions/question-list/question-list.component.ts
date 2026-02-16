@@ -17,6 +17,7 @@ import { QuestionService, Question, QuestionFilters } from '@core/services/quest
         <button 
           *ngFor="let filter of filters" 
           [class.active]="currentFilter === filter.value"
+          [attr.title]="filter.title"
           (click)="setFilter(filter.value)">
           {{ filter.label }}
         </button>
@@ -51,8 +52,9 @@ import { QuestionService, Question, QuestionFilters } from '@core/services/quest
                   }
                 </div>
                 <div class="author-info">
-                  <img [src]="question.author.avatarUrl || '/assets/default-avatar.png'" 
-                       [alt]="question.author.displayName" />
+                  <img [src]="getAvatarUrl(question.author?.avatarUrl)" 
+                       [alt]="question.author.displayName"
+                       (error)="$any($event.target).src='/assets/default-avatar.svg'" />
                   <span>{{ question.author.displayName }}</span>
                   <span class="reputation">{{ question.author.reputation }}</span>
                   <span class="timestamp">{{ question.createdAt | date:'short' }}</span>
@@ -235,10 +237,10 @@ export class QuestionListComponent implements OnInit {
   searchQuery: string | null = null;
   
   filters = [
-    { label: 'Newest', value: 'newest' },
-    { label: 'Active', value: 'active' },
-    { label: 'Unanswered', value: 'unanswered' },
-    { label: 'Most Votes', value: 'votes' }
+    { label: 'Newest', value: 'newest', title: 'Questions ordered by creation date (newest first)' },
+    { label: 'Active', value: 'active', title: 'Questions ordered by recent activity (new answers, edits)' },
+    { label: 'Unanswered', value: 'unanswered', title: 'Only questions with no answers' },
+    { label: 'Most Votes', value: 'votes', title: 'Questions ordered by vote count (highest first)' }
   ];
 
   constructor(private questionService: QuestionService, private route: ActivatedRoute) {}
@@ -276,5 +278,12 @@ export class QuestionListComponent implements OnInit {
 
   loadMore() {
     // Implementation for pagination
+  }
+
+  getAvatarUrl(avatarUrl?: string | null): string {
+    const url = (avatarUrl || '').trim();
+    return url && (url.startsWith('http://') || url.startsWith('https://'))
+      ? url
+      : '/assets/default-avatar.svg';
   }
 }

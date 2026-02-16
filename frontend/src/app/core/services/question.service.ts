@@ -31,6 +31,9 @@ export interface Answer {
 
 export interface QuestionDetail extends Question {
   answers: Answer[];
+  /** API returns flat author fields when using GetQuestion endpoint */
+  authorDisplayName?: string;
+  authorUsername?: string;
 }
 
 export interface QuestionAuthor {
@@ -52,6 +55,8 @@ export interface CreateQuestionRequest {
   title: string;
   body: string;
   tags: string[];
+  /** Optional: Share your solution with the question. Will be posted as an accepted answer. */
+  solution?: string;
 }
 
 export interface CreateQuestionResponse {

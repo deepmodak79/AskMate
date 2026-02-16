@@ -41,8 +41,9 @@ import { AuthService } from '@core/services/auth.service';
 
               <div class="user-menu">
                 <button class="user-avatar">
-                  <img [src]="currentUser?.avatarUrl || '/assets/default-avatar.png'" 
-                       [alt]="currentUser?.displayName" />
+                  <img [src]="getAvatarUrl(currentUser?.avatarUrl)" 
+                       [alt]="currentUser?.displayName"
+                       (error)="$any($event.target).src='/assets/default-avatar.svg'" />
                   <span class="reputation">{{ currentUser?.reputation }}</span>
                 </button>
               </div>
@@ -277,5 +278,12 @@ export class MainLayoutComponent implements OnInit {
     this.isDarkTheme = !this.isDarkTheme;
     localStorage.setItem('theme', this.isDarkTheme ? 'dark' : 'light');
     document.body.classList.toggle('dark-theme', this.isDarkTheme);
+  }
+
+  getAvatarUrl(avatarUrl?: string | null): string {
+    const url = (avatarUrl || '').trim();
+    return url && (url.startsWith('http://') || url.startsWith('https://'))
+      ? url
+      : '/assets/default-avatar.svg';
   }
 }
