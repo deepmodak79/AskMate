@@ -1,7 +1,8 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://deepoverflow.rmes.com/api',
-  signalRUrl: 'https://deepoverflow.rmes.com/hubs',
+  // Update apiUrl after deploying backend to Render (e.g. https://askmate-api.onrender.com/api)
+  apiUrl: 'https://askmate-api.onrender.com/api',
+  signalRUrl: 'https://askmate-api.onrender.com/hubs',
   enableAI: true,
   enableNotifications: true,
   appName: 'Deep Overflow',

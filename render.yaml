@@ -1,0 +1,21 @@
+# Render.com deployment config for Deep Overflow backend
+# 1. Push this repo to GitHub
+# 2. Go to https://dashboard.render.com -> New -> Web Service
+# 3. Connect your GitHub repo (AskMate)
+# 4. Render will auto-detect this file, or set:
+#    Root Directory: (leave empty - uses repo root)
+#    Build: (auto from render.yaml)
+# 5. After deploy, copy your backend URL and update frontend environment.prod.ts
+
+services:
+  - type: web
+    name: askmate-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+    healthCheckPath: /health
