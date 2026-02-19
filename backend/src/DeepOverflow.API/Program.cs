@@ -208,10 +208,9 @@ app.MapHealthChecks("/health");
 // SignalR hubs
 app.MapHub<NotificationHub>("/hubs/notifications");
 
-// Create dev database automatically when using SQLite
-if (useSqliteDevDb)
+// Ensure database schema exists (SQLite: ephemeral dev; PostgreSQL: persistent prod)
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
 }

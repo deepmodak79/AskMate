@@ -316,9 +316,9 @@ On the free tier, SQLite data is lost when the service redeploys. For persistent
 
 ---
 
-### Step 4: Run Migrations (If You Use EF Migrations)
+### Step 4: Schema Creation
 
-If your project uses Entity Framework migrations, you may need to run them. This can be done via a one-off command or a separate deploy step. Check your project's migration setup.
+The app creates the database schema automatically on startup (`EnsureCreated`). No migrations needed. After redeploy, your data will persist across restarts.
 
 ---
 

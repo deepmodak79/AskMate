@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '@environments/environment';
 import { QuestionDetail, QuestionService } from '@core/services/question.service';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-question-detail',
@@ -27,9 +28,15 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
         </div>
 
         <div class="vote-row">
-          <button type="button" class="vote-btn" (click)="voteQuestion('upvote')" title="Upvote">▲</button>
+          @if (isAuthenticated) {
+            <button type="button" class="vote-btn" (click)="voteQuestion('upvote')" title="Upvote">▲</button>
+          }
           <span class="vote-score">{{ question.voteScore }}</span>
-          <button type="button" class="vote-btn" (click)="voteQuestion('downvote')" title="Downvote">▼</button>
+          @if (isAuthenticated) {
+            <button type="button" class="vote-btn" (click)="voteQuestion('downvote')" title="Downvote">▼</button>
+          } @else {
+            <a routerLink="/auth/login" [queryParams]="{returnUrl: '/questions/' + question.slug}" class="login-hint">Log in to vote</a>
+          }
         </div>
 
         <div class="body">
@@ -48,9 +55,13 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
           @for (a of question.answers; track a.id) {
             <div class="answer" [class.accepted]="a.isAccepted">
               <div class="vote-row answer-votes">
-                <button type="button" class="vote-btn" (click)="voteAnswer(a.id, 'upvote')" title="Upvote">▲</button>
+                @if (isAuthenticated) {
+                  <button type="button" class="vote-btn" (click)="voteAnswer(a.id, 'upvote')" title="Upvote">▲</button>
+                }
                 <span class="vote-score">{{ a.voteScore }}</span>
-                <button type="button" class="vote-btn" (click)="voteAnswer(a.id, 'downvote')" title="Downvote">▼</button>
+                @if (isAuthenticated) {
+                  <button type="button" class="vote-btn" (click)="voteAnswer(a.id, 'downvote')" title="Downvote">▼</button>
+                }
               </div>
               <div class="answer-body"><pre>{{ a.body }}</pre></div>
               <div class="answer-meta">
@@ -64,16 +75,22 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
         </div>
 
         <h3>Your Answer</h3>
-        <form [formGroup]="answerForm" (ngSubmit)="postAnswer()">
-          <textarea formControlName="body" rows="6" placeholder="Write your answer..."></textarea>
-          <div class="actions">
-            <button class="btn btn-primary btn-submit" type="submit" [disabled]="answerForm.invalid || posting">
-              {{ posting ? 'Posting...' : 'Post Answer' }}
-            </button>
-          </div>
-          <p class="error" *ngIf="postError">{{ postError }}</p>
-          <p class="hint">Answer can be a single word or long text.</p>
-        </form>
+        @if (isAuthenticated) {
+          <form [formGroup]="answerForm" (ngSubmit)="postAnswer()">
+            <textarea formControlName="body" rows="6" placeholder="Write your answer..."></textarea>
+            <div class="actions">
+              <button class="btn btn-primary btn-submit" type="submit" [disabled]="answerForm.invalid || posting">
+                {{ posting ? 'Posting...' : 'Post Answer' }}
+              </button>
+            </div>
+            <p class="error" *ngIf="postError">{{ postError }}</p>
+            <p class="hint">Answer can be a single word or long text.</p>
+          </form>
+        } @else {
+          <p class="login-prompt">
+            <a routerLink="/auth/login" [queryParams]="{returnUrl: '/questions/' + question.slug}">Log in</a> to post an answer.
+          </p>
+        }
       </div>
     }
   `,
@@ -118,12 +135,16 @@ import { QuestionDetail, QuestionService } from '@core/services/question.service
     .answer-votes { margin-bottom: 0.5rem; }
     .error { color: #b00020; }
     .hint { color: var(--secondary-text); margin: .5rem 0 0; }
+    .login-hint, .login-prompt a { color: var(--primary-color); text-decoration: none; }
+    .login-hint:hover, .login-prompt a:hover { text-decoration: underline; }
+    .login-prompt { color: var(--secondary-text); padding: 1rem; background: var(--hover-bg); border-radius: 8px; }
   `]
 })
 export class QuestionDetailComponent implements OnInit {
   question: QuestionDetail | null = null;
   loading = true;
   error: string | null = null;
+  isAuthenticated = false;
 
   posting = false;
   postError: string | null = null;
@@ -136,10 +157,15 @@ export class QuestionDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private questionService: QuestionService,
     private http: HttpClient,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private auth: AuthService
   ) {}
 
   ngOnInit() {
+    this.isAuthenticated = this.auth.isAuthenticated();
+    this.auth.currentUser$.subscribe(() => {
+      this.isAuthenticated = this.auth.isAuthenticated();
+    });
     this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');
       if (!slug) return;
