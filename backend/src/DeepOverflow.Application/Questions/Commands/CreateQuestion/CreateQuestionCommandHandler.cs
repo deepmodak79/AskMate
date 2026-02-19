@@ -43,6 +43,23 @@ public class CreateQuestionCommandHandler : IRequestHandler<CreateQuestionComman
                 return Result<CreateQuestionResponse>.Failure("User must be authenticated");
             }
 
+            var userId = _currentUserService.UserId.Value;
+            var author = await _unitOfWork.Users.GetByIdAsync(userId, cancellationToken);
+            if (author == null)
+            {
+                _logger.LogWarning("User {UserId} from JWT not found in database (e.g. DB was reset). Ask user to re-login.", userId);
+                return Result<CreateQuestionResponse>.Failure("Your account was not found. Please log out and log in again.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Title))
+                return Result<CreateQuestionResponse>.Failure("Title is required");
+            if (request.Title.Trim().Length < 10)
+                return Result<CreateQuestionResponse>.Failure("Title must be at least 10 characters");
+            if (string.IsNullOrWhiteSpace(request.Body))
+                return Result<CreateQuestionResponse>.Failure("Body is required");
+            if (request.Body.Trim().Length < 20)
+                return Result<CreateQuestionResponse>.Failure("Body must be at least 20 characters");
+
             // Check for spam
             var isSpam = await _aiService.IsSpamAsync($"{request.Title}\n{request.Body}", cancellationToken);
             if (isSpam)
@@ -114,7 +131,6 @@ public class CreateQuestionCommandHandler : IRequestHandler<CreateQuestionComman
             }
             
             // Give reputation points for asking question
-            var author = await _unitOfWork.Users.GetByIdAsync(_currentUserService.UserId.Value, cancellationToken);
             if (author != null)
             {
                 // No points for asking, but track in history
@@ -140,7 +156,7 @@ public class CreateQuestionCommandHandler : IRequestHandler<CreateQuestionComman
                         question.Id,
                         question.Title,
                         question.Body,
-                        request.Tags,
+                        request.Tags ?? new List<string>(),
                         CancellationToken.None);
                 }
                 catch (Exception ex)
@@ -188,11 +204,14 @@ public class CreateQuestionCommandHandler : IRequestHandler<CreateQuestionComman
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating question: {Message}", ex.Message);
-            // Include inner exception hint for common DB issues
             var msg = ex.InnerException?.Message ?? ex.Message;
             if (msg.Contains("UNIQUE constraint") || msg.Contains("duplicate key"))
                 return Result<CreateQuestionResponse>.Failure("A question with this title may already exist. Try a different title.");
-            return Result<CreateQuestionResponse>.Failure("An error occurred while creating the question");
+            if (msg.Contains("FOREIGN KEY") || msg.Contains("constraint"))
+                return Result<CreateQuestionResponse>.Failure("Invalid data. Please check your question, tags, and try again.");
+            if (msg.Contains("readonly") || msg.Contains("access") || msg.Contains("permission"))
+                return Result<CreateQuestionResponse>.Failure("Database write failed. Please try again later.");
+            return Result<CreateQuestionResponse>.Failure("An error occurred while creating the question. Please ensure Title and Body are filled, and try again.");
         }
     }
 

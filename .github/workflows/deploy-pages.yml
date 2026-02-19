@@ -39,6 +39,10 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Fix SPA routing for GitHub Pages (404 on hard refresh)
+        run: cp ./frontend/dist/deep-overflow/browser/index.html ./frontend/dist/deep-overflow/browser/404.html
+        working-directory: .
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

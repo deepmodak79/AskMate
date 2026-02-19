@@ -40,12 +40,18 @@ import { AuthService } from '@core/services/auth.service';
               </button>
 
               <div class="user-menu">
-                <button class="user-avatar">
+                <div class="user-info">
                   <img [src]="getAvatarUrl(currentUser?.avatarUrl)" 
-                       [alt]="currentUser?.displayName"
+                       [alt]="getDisplayName()"
                        (error)="$any($event.target).src=getDefaultAvatarPath()" />
-                  <span class="reputation">{{ currentUser?.reputation }}</span>
-                </button>
+                  <div class="user-details">
+                    <span class="user-name">{{ getDisplayName() }}</span>
+                    @if (currentUser?.department) {
+                      <span class="user-team">{{ currentUser.department }}</span>
+                    }
+                    <span class="reputation">{{ currentUser?.reputation ?? 0 }} pts</span>
+                  </div>
+                </div>
               </div>
               <button class="btn btn-secondary" type="button" (click)="logout()">
                 Logout
@@ -183,24 +189,45 @@ import { AuthService } from '@core/services/auth.service';
       border: 1px solid var(--primary-color);
     }
 
-    .user-avatar {
+    .user-menu {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      background: none;
-      border: none;
-      cursor: pointer;
     }
 
-    .user-avatar img {
-      width: 32px;
-      height: 32px;
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .user-info img {
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: var(--text-color);
+      font-size: 0.9rem;
+    }
+
+    .user-team {
+      font-size: 0.8rem;
+      color: var(--secondary-text);
     }
 
     .reputation {
       font-weight: 600;
       color: var(--primary-color);
+      font-size: 0.8rem;
     }
 
     .theme-toggle {
@@ -291,5 +318,11 @@ export class MainLayoutComponent implements OnInit {
     const base = typeof document !== 'undefined' ? (document.querySelector('base')?.getAttribute('href') || '/') : '/';
     const normalized = base.endsWith('/') ? base : base + '/';
     return normalized + 'assets/default-avatar.svg';
+  }
+
+  getDisplayName(): string {
+    const u = this.currentUser;
+    if (!u) return 'User';
+    return (u.displayName || u.username || 'User').trim() || 'User';
   }
 }

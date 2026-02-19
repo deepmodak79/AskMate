@@ -265,6 +265,14 @@ If these work, your full stack is deployed.
 
 ---
 
+### Problem: Posted questions disappear after login again
+
+**Cause:** Render free tier uses **ephemeral SQLite**. The database is wiped when the service restarts or redeploys.
+
+**Fix:** Add a **PostgreSQL database** on Render (see "Optional: Add a PostgreSQL Database" below). After adding it and setting `ConnectionStrings__DefaultConnection`, your questions, users, and votes will persist across restarts.
+
+---
+
 ### Problem: Backend is very slow on first request
 
 **Cause:** Render free tier spins down after ~15 min of inactivity.

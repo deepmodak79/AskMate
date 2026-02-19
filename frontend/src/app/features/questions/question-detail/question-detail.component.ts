@@ -200,8 +200,10 @@ export class QuestionDetailComponent implements OnInit {
     if (!this.question) return;
     this.http.post<{ voteScore: number }>(`${environment.apiUrl}/answers/${answerId}/vote`, { voteType: type }).subscribe({
       next: (res) => {
-        const a = this.question!.answers?.find(x => x.id === answerId);
-        if (a) a.voteScore = res.voteScore;
+        const answers = this.question!.answers?.map(a =>
+          a.id === answerId ? { ...a, voteScore: res.voteScore } : a
+        ) ?? [];
+        this.question = { ...this.question!, answers };
       },
       error: () => { /* auth or network error */ }
     });
