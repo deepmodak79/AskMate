@@ -54,7 +54,7 @@ import { QuestionService, Question, QuestionFilters } from '@core/services/quest
                 <div class="author-info">
                   <img [src]="getAvatarUrl(question.author?.avatarUrl)" 
                        [alt]="question.author.displayName"
-                       (error)="$any($event.target).src='/assets/default-avatar.svg'" />
+                       (error)="$any($event.target).src=getDefaultAvatarPath()" />
                   <span>{{ question.author.displayName }}</span>
                   <span class="reputation">{{ question.author.reputation }}</span>
                   <span class="timestamp">{{ question.createdAt | date:'short' }}</span>
@@ -284,6 +284,12 @@ export class QuestionListComponent implements OnInit {
     const url = (avatarUrl || '').trim();
     return url && (url.startsWith('http://') || url.startsWith('https://'))
       ? url
-      : '/assets/default-avatar.svg';
+      : this.getDefaultAvatarPath();
+  }
+
+  getDefaultAvatarPath(): string {
+    const base = typeof document !== 'undefined' ? (document.querySelector('base')?.getAttribute('href') || '/') : '/';
+    const normalized = base.endsWith('/') ? base : base + '/';
+    return normalized + 'assets/default-avatar.svg';
   }
 }

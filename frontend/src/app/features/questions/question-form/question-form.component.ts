@@ -60,10 +60,6 @@ import { QuestionService } from '@core/services/question.service';
           <button class="btn btn-secondary" type="button" (click)="cancel()">Cancel</button>
         </div>
 
-        <p class="hint">
-          Note: you must be logged in to post.
-        </p>
-
         <p class="error" *ngIf="error">{{ error }}</p>
       </form>
     </div>
@@ -153,7 +149,7 @@ export class QuestionFormComponent {
       },
       error: (err) => {
         this.isSubmitting = false;
-        this.error = err?.message || 'Failed to post question';
+        this.error = err?.message || 'Failed to post question. Please ensure you are logged in.';
       }
     });
   }

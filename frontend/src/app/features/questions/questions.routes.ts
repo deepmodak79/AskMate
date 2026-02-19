@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from '@core/guards/auth.guard';
 
 export const QUESTION_ROUTES: Routes = [
   {
@@ -8,6 +9,7 @@ export const QUESTION_ROUTES: Routes = [
   },
   {
     path: 'ask',
+    canActivate: [authGuard],
     loadComponent: () => import('./question-form/question-form.component')
       .then(m => m.QuestionFormComponent)
   },
