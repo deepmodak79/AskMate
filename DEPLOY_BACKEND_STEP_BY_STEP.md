@@ -71,8 +71,8 @@ Fill in these settings:
 | **Branch** | `main` |
 | **Root Directory** | Leave **empty** |
 | **Runtime** | **Docker** |
-| **Dockerfile Path** | `backend/Dockerfile` (no leading `./`) |
-| **Docker Context** | `backend` |
+| **Dockerfile Path** | `backend/Dockerfile` |
+| **Docker Context** | `.` (repo root) or leave **empty** |
 
 ---
 

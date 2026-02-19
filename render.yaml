@@ -12,7 +12,7 @@ services:
     name: askmate-api
     runtime: docker
     dockerfilePath: backend/Dockerfile
-    dockerContext: backend
+    dockerContext: .
 
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
